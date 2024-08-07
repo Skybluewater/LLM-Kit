@@ -3,7 +3,7 @@ import os
 # import sys
 # sys.path.append('../..')
 from utils.utils import get_model_tokenizer, build_query
-import deepspeed
+# import deepspeed
 import torch
 from peft import PeftModel
 from threading import Thread
@@ -18,9 +18,11 @@ DEVICE_ = "cuda" if torch.cuda.is_available(
 DEVICE_ID = "0" if torch.cuda.is_available() else None
 DEVICE = f"{DEVICE_}:{DEVICE_ID}" if DEVICE_ID else DEVICE_
 
+
 def post_process(text):
     text = text.replace("<eoa>", "")
     return text
+
 
 class AutoLM(LLM):
     max_token: int = 3000
@@ -48,7 +50,10 @@ class AutoLM(LLM):
               history: List[List[str]] = [],
               streaming: bool = STREAMING):  # -> Tuple[str, List[List[str]]]:
         # history = history[-self.history_len:-1] if self.history_len > 0 else []
-        gen_kwargs = {"max_length": self.max_token, "do_sample": self.do_sample, "top_p": self.top_p, "temperature": self.temperature, "repetition_penalty": self.repetition_penalty, "renormalize_logits": True, "pad_token_id": self.tokenizer.pad_token_id, "eos_token_id": self.tokenizer.eos_token_id}
+        gen_kwargs = {"max_length": self.max_token, "do_sample": self.do_sample, "top_p": self.top_p,
+                      "temperature": self.temperature, "repetition_penalty": self.repetition_penalty,
+                      "renormalize_logits": True, "pad_token_id": self.tokenizer.pad_token_id,
+                      "eos_token_id": self.tokenizer.eos_token_id}
         generation_config = GenerationConfig(**gen_kwargs)
         if streaming:
             if "chatglm-6b" == self.model_name or "chatglm2-6b" == self.model_name or "chatglm2-6b-32k" == self.model_name:
@@ -94,7 +99,7 @@ class AutoLM(LLM):
                     del inputs["token_type_ids"]
                 streamer = TextIteratorStreamer(
                     self.tokenizer, skip_prompt=True, skip_special_tokens=True)
-                if "internlm-chat-7b-8k" ==  self.model_name:
+                if "internlm-chat-7b-8k" == self.model_name:
                     generation_config.eos_token_id = [2, 103028]
                 generation_config.max_new_tokens = self.max_token - inputs["input_ids"].shape[-1]
                 generation_kwargs = {**inputs, "streamer": streamer, "generation_config": generation_config}
@@ -131,7 +136,8 @@ class AutoLM(LLM):
                     chat = self.model.module.chat
                 else:
                     chat = self.model.chat
-                response, _ = chat(self.tokenizer, prompt, history, append_history=False, generation_config=generation_config)
+                response, _ = chat(self.tokenizer, prompt, history, append_history=False,
+                                   generation_config=generation_config)
             else:
                 query = build_query(
                     self.model_name, self.tokenizer, prompt, history)
@@ -139,7 +145,7 @@ class AutoLM(LLM):
                                         truncation=True, return_tensors="pt").to(self.model.device)
                 if "token_type_ids" in inputs:
                     del inputs["token_type_ids"]
-                if "internlm-chat-7b-8k" ==  self.model_name:
+                if "internlm-chat-7b-8k" == self.model_name:
                     generation_config.eos_token_id = [2, 103028]
                 generation_config.max_new_tokens = self.max_token - inputs["input_ids"].shape[-1]
                 generation_kwargs = {**inputs, "generation_config": generation_config}
@@ -174,7 +180,8 @@ class AutoLM(LLM):
         original_path = os.getcwd()
         os.chdir(new_path)
         self.model, self.tokenizer = get_model_tokenizer(
-            model_name, use_8bit=use_8bit, use_4bit=use_4bit, max_length=self.max_token, use_deepspeed=self.use_deepspeed, device_map=device_map, dtype=dtype)
+            model_name, use_8bit=use_8bit, use_4bit=use_4bit, max_length=self.max_token,
+            use_deepspeed=self.use_deepspeed, device_map=device_map, dtype=dtype)
         os.chdir(original_path)
         if use_lora:
             try:
@@ -196,10 +203,11 @@ class AutoLM(LLM):
         self.model.eval()
         if self.use_deepspeed and not use_8bit and not use_4bit:
             # deepspeed init过程本身会占用一些存储，若部分模型出现OOM，可先将模型加载到内存中
-            self.model = deepspeed.init_inference(self.model,
-                                                  dtype=self.model.dtype,
-                                                  max_out_tokens=self.max_token,
-                                                  replace_with_kernel_inject=True)
+            pass
+            # self.model = deepspeed.init_inference(self.model,
+            #                                       dtype=self.model.dtype,
+            #                                       max_out_tokens=self.max_token,
+            #                                       replace_with_kernel_inject=True)
 
     def clear(self):
         self.model_name = ''
@@ -217,7 +225,6 @@ class AutoLM(LLM):
                 print(
                     "如果您使用的是 macOS 建议将 pytorch 版本升级至 2.0.0 或更高版本，以支持及时清理 torch 产生的内存占用。")
 
-
 # if __name__ == "__main__":
 #     # os.chdir('../../models')
 #     out = ""
@@ -230,4 +237,3 @@ class AutoLM(LLM):
 #         out = resp
 #         print('out2:', out)
 #     print('out3:', out)
-

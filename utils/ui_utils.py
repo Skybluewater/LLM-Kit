@@ -1797,6 +1797,7 @@ def load_javascript():
     print("loading javascript...")
     js = '''
     <script src="file=data/config/js/custom.js"></script>
+    <link rel="stylesheet" type="text/css" href="file=data/config/styles/main.css">
     '''
 
     def template_response(*args, **kwargs):

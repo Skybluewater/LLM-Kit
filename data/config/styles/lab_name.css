@@ -1,0 +1,9 @@
+#lab_name {
+    font-weight: bold;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    height: auto;
+    margin-top: 10px; /* Add some space between the logo and the lab name */
+}
